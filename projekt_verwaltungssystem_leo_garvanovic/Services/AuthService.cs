@@ -22,10 +22,12 @@ namespace projekt_verwaltungssystem_leo_garvanovic.Services
         {
             Console.Write("Benutzername: ");
             string benutzername = Console.ReadLine();
+            string benutzernameInput = benutzername.ToLower();
+
             Console.Write("Passwort:     ");
             string passwort = Console.ReadLine();
 
-            return benutzerListe.FirstOrDefault(b => b.Benutzername == benutzername && b.Passwort == passwort);
+            return benutzerListe.FirstOrDefault(b => b.Benutzername == benutzernameInput && b.Passwort == passwort);
         }
     }
 }
