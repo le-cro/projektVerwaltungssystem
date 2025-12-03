@@ -11,8 +11,8 @@ namespace projekt_verwaltungssystem_leo_garvanovic.Models
         public int Id { get; set; }
         public string Modell { get; set; }
         public string AutoBenutzer { get; set; }
-        public int LeihenVon { get; set; }
-        public int LeihenBis { get; set; }
+        public string LeihenVon { get; set; }
+        public string LeihenBis { get; set; }
 
         public override string ToString() => $"ID: {Id}, Modell: {Modell}, AutoBenutzer: {AutoBenutzer}, Ausgeliehen von: {LeihenVon} bis {LeihenBis}";
     }
