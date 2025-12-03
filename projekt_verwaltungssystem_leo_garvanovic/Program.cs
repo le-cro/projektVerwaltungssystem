@@ -23,15 +23,19 @@ namespace projekt_verwaltungssystem_leo_garvanovic
                     Console.ForegroundColor = ConsoleColor.Green;
                     Console.WriteLine($"\nErfolgreich eingeloggt als {user.Benutzername} ({user.Rolle}).");
                     Console.ForegroundColor = ConsoleColor.White;
+                    
+                    Menu.ShowMainMenu(user);
                 }
                 else
                 {
                     Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine("\nLogin fehlgeschlagen. Bitte überprüfen Sie Ihre Anmeldedaten.\n", Console.ForegroundColor);
+                    Console.WriteLine("\nLogin fehlgeschlagen. Bitte überprüfen Sie Ihre Anmeldedaten.\n");
                     Console.ForegroundColor = ConsoleColor.White;
                     Console.WriteLine("-------------------------------------------------------------");
                 }
             }
+
+            
         }
     }
 }

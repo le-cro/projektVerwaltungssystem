@@ -8,5 +8,12 @@ namespace projekt_verwaltungssystem_leo_garvanovic.Models
 {
     internal class Computer
     {
+        public int Id { get; set; }
+        public string Modell { get; set; }
+        public string ComputerBenutzer { get; set; }
+        public int LeihenVon { get; set; }
+        public int LeihenBis { get; set; }
+
+        public override string ToString() => $"ID: {Id}, Modell: {Modell}, ComputerBenutzer: {ComputerBenutzer}, Ausgeliehen von: {LeihenVon} bis {LeihenBis}";
     }
 }
