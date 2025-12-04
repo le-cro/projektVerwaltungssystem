@@ -1,4 +1,6 @@
-﻿using projekt_verwaltungssystem_leo_garvanovic.Models;
+﻿using projekt_verwaltungssystem_leo_garvanovic.Export;
+using projekt_verwaltungssystem_leo_garvanovic.Models;
+using projekt_verwaltungssystem_leo_garvanovic.Services;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -72,7 +74,7 @@ namespace projekt_verwaltungssystem_leo_garvanovic.UI
                     switch (choice)
                     {
                         case "1":
-                            ListenVerwaltung();
+                            Menu.ShowListenMenu(user);
                             break;
 
                         case "2":
@@ -93,7 +95,7 @@ namespace projekt_verwaltungssystem_leo_garvanovic.UI
         }
 
         //private static Dictionary<string, object> listen = new Dictionary<string, object>()
-        private static readonly Dictionary<string, System.Collections.IList> listen = new()
+        private static readonly Dictionary<string, object> listen = new()
         {
             { "Mitarbeiter", new List<Person>() },
             { "Computer", new List<Computer>() },
@@ -109,17 +111,24 @@ namespace projekt_verwaltungssystem_leo_garvanovic.UI
             { "Autos",       typeof(Auto) }
         };
 
+        private static DataService data = new DataService(listen, listTypes);
+        private static CsvExporter csv = new CsvExporter(listen, listTypes);
+        private static char csvDelimiter = ';';
+
         private static IList GetIList(string listName) => (IList)listen[listName];
         private static Type GetItemType(string listName) => listTypes[listName];
 
         private static void ShowListenMenu(Benutzer user)
         {
+            // use the static field
+            data.SaveAll(@"C:\Temp\Export");
+
             bool running = true;
 
             while (running)
             {
                 Console.Clear();
-                Console.WriteLine("---------- Listenverwaltung ----------");
+                Console.WriteLine("---------- Listenverwaltung ----------\n");
                 Console.WriteLine("1. Mitarbeiter");
                 Console.WriteLine("2. Computer");
                 Console.WriteLine("3. Handys");
@@ -165,7 +174,7 @@ namespace projekt_verwaltungssystem_leo_garvanovic.UI
             while (!back)
             {
                 Console.Clear();
-                Console.WriteLine($"---------- {listName}-Verwaltung ----------");
+                Console.WriteLine($"---------- {listName}-Verwaltung ----------\n");
                 Console.WriteLine("1. Anzeigen");
 
                 if (user.Rolle == "Admin")
@@ -208,11 +217,11 @@ namespace projekt_verwaltungssystem_leo_garvanovic.UI
                         break;
                 }
 
-                if (!back)
-                {
-                    Console.WriteLine("Drücken Sie eine Taste, um fortzufahren...");
-                    Console.ReadKey();
-                }
+                //if (!back)
+                //{
+                //    Console.WriteLine("Drücken Sie eine Taste, um fortzufahren...");
+                //    Console.ReadKey();
+                //}
             }
         }
 
@@ -222,18 +231,17 @@ namespace projekt_verwaltungssystem_leo_garvanovic.UI
             Console.ReadKey();
         }
 
-
         private static void ShowBrowseMenu(string listName)
         {
             bool back = false;
             while (!back)
             {
                 Console.Clear();
-                Console.WriteLine($"---------- {listName}: Anzeigen ----------");
+                Console.WriteLine($"---------- {listName}: Anzeigen ----------\n");
                 Console.WriteLine("1. Alle Einträge anzeigen");
                 Console.WriteLine("2. Suchen (Freitext über alle Eigenschaften)");
                 Console.WriteLine("3. Filtern (Eigenschaft + Operator)");
-                Console.WriteLine("0. Zurück");
+                Console.WriteLine("0. Zurück\n");
 
                 string choice = Console.ReadLine();
 
@@ -501,8 +509,112 @@ namespace projekt_verwaltungssystem_leo_garvanovic.UI
 
 
         private static void BenutzerVerwaltung() => Console.WriteLine("Benutzerverwaltung...");
-        private static void ListenVerwaltung() => Console.WriteLine("Listenverwaltung...");
-        private static void ExportFunktionen() => Console.WriteLine("Exportfunktionen...");
+
+        private static void ExportFunktionen()
+        {
+            while (true)
+            {
+                Console.Clear();
+                Console.WriteLine("---------- Export/Import ----------\n");
+                Console.WriteLine($"(Trennzeichen: '{csvDelimiter}')");
+                Console.WriteLine("1. Liste exportieren");
+                Console.WriteLine("2. Alle Listen exportieren");
+                Console.WriteLine("3. Liste importieren");
+                Console.WriteLine("4. Alle Listen importieren");
+                Console.WriteLine("5. Trennzeichen wechseln (, / ;)");
+                Console.WriteLine("0. Zurück\n");
+
+                switch (Console.ReadLine())
+                {
+                    case "1":
+                        {
+                            var list = PromptListName();
+                            if (list == null) break;
+                            Console.Write($"Pfad (z.B. C:\\Temp\\{list}.csv): ");
+                            var path = Console.ReadLine();
+                            if (string.IsNullOrWhiteSpace(path)) break;
+                            csv.SaveList(list, path.Trim(), csvDelimiter, includeHeader: true);
+                            Info($"Export '{list}' -> {path}");
+                        }
+                        break;
+
+                    case "2":
+                        {
+                            Console.Write("Ordner (z.B. C:\\Temp\\Export): ");
+                            var dir = Console.ReadLine();
+                            if (string.IsNullOrWhiteSpace(dir)) break;
+                            csv.SaveAll(dir.Trim(), csvDelimiter);
+                            Info($"Alle Listen exportiert -> {dir}");
+                        }
+                        break;
+
+                    case "3":
+                        {
+                            var list = PromptListName();
+                            if (list == null) break;
+                            Console.Write($"Pfad (z.B. C:\\Temp\\{list}.csv): ");
+                            var path = Console.ReadLine();
+                            if (string.IsNullOrWhiteSpace(path)) break;
+                            bool clear = PromptYesNo("Vorher löschen? (j/n): ");
+                            int n = csv.LoadList(list, path.Trim(), csvDelimiter, clear);
+                            Info($"{n} Zeilen importiert in '{list}'");
+                        }
+                        break;
+
+                    case "4":
+                        {
+                            Console.Write("Ordner (z.B. C:\\Temp\\Export): ");
+                            var dir = Console.ReadLine();
+                            if (string.IsNullOrWhiteSpace(dir)) break;
+                            bool clear = PromptYesNo("Alle vorher löschen? (j/n): ");
+                            int n = csv.LoadAll(dir.Trim(), csvDelimiter, clear);
+                            Info($"{n} Zeilen aus allen CSVs importiert");
+                        }
+                        break;
+
+                    case "5":
+                        csvDelimiter = (csvDelimiter == ';') ? ',' : ';';
+                        Info($"Trennzeichen geändert auf '{csvDelimiter}'");
+                        break;
+
+                    case "0":
+                        return;
+
+                    default:
+                        Info("Ungültige Eingabe.");
+                        break;
+                }
+            }
+        }
+
+        private static string? PromptListName()
+        {
+            // assumes 'listen' dictionary exists with keys: Mitarbeiter, Computer, Handys, Autos
+            var names = listen.Keys.ToList();
+            if (names.Count == 0) { Info("Keine Listen vorhanden."); return null; }
+
+            Console.WriteLine("Listen:");
+            for (int i = 0; i < names.Count; i++) Console.WriteLine($"{i + 1}. {names[i]}");
+            Console.Write("Auswahl #: ");
+            if (!int.TryParse(Console.ReadLine(), out int idx) || idx < 1 || idx > names.Count) { Info("Ungültig."); return null; }
+            return names[idx - 1];
+        }
+
+        private static bool PromptYesNo(string prompt)
+        {
+            Console.Write(prompt);
+            var s = (Console.ReadLine() ?? "").Trim().ToLowerInvariant();
+            return s is "j" or "ja" or "y" or "yes";
+        }
+
+        private static void Info(string msg)
+        {
+            Console.WriteLine(msg);
+            Console.WriteLine("Taste drücken …");
+            Console.ReadKey();
+        }
+
+
         private static void SystemLogs() => Console.WriteLine("System-Logs anzeigen...");
 
     }

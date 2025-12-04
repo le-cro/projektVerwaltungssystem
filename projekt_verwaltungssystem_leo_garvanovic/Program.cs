@@ -34,8 +34,6 @@ namespace projekt_verwaltungssystem_leo_garvanovic
                     Console.WriteLine("-------------------------------------------------------------");
                 }
             }
-
-            
         }
     }
 }
