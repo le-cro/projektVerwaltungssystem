@@ -1,5 +1,6 @@
 ﻿using projekt_verwaltungssystem_leo_garvanovic.Models;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -16,7 +17,7 @@ namespace projekt_verwaltungssystem_leo_garvanovic.UI
             while (running)
             {
                 Console.Clear();
-                Console.WriteLine("---------- Hauptmenü ----------");
+                Console.WriteLine("---------- Hauptmenü ----------\n");
 
                 if (user.Rolle == "Admin")
                 {
@@ -91,7 +92,8 @@ namespace projekt_verwaltungssystem_leo_garvanovic.UI
             }
         }
 
-        private static Dictionary<string, object> listen = new Dictionary<string, object>()
+        //private static Dictionary<string, object> listen = new Dictionary<string, object>()
+        private static readonly Dictionary<string, System.Collections.IList> listen = new()
         {
             { "Mitarbeiter", new List<Person>() },
             { "Computer", new List<Computer>() },
@@ -99,6 +101,16 @@ namespace projekt_verwaltungssystem_leo_garvanovic.UI
             { "Autos", new List<Auto>() }
         };
 
+        private static readonly Dictionary<string, Type> listTypes = new()
+        {
+            { "Mitarbeiter", typeof(Person) },
+            { "Computer",    typeof(Computer) },
+            { "Handys",      typeof(Handy) },
+            { "Autos",       typeof(Auto) }
+        };
+
+        private static IList GetIList(string listName) => (IList)listen[listName];
+        private static Type GetItemType(string listName) => listTypes[listName];
 
         private static void ShowListenMenu(Benutzer user)
         {
@@ -170,25 +182,29 @@ namespace projekt_verwaltungssystem_leo_garvanovic.UI
                 switch (choice)
                 {
                     case "1":
-                        ShowItems(listName);
+                        ShowBrowseMenu(listName); // Untermenü von Anzeigen
                         break;
                     case "2":
                         if (user.Rolle == "Admin") AddItem(listName);
                         else Console.WriteLine("Keine Berechtigung!");
+                        Pause();
                         break;
                     case "3":
                         if (user.Rolle == "Admin") EditItem(listName);
                         else Console.WriteLine("Keine Berechtigung!");
+                        Pause();
                         break;
                     case "4":
                         if (user.Rolle == "Admin") DeleteItem(listName);
                         else Console.WriteLine("Keine Berechtigung!");
+                        Pause();
                         break;
                     case "0":
                         back = true;
                         break;
                     default:
                         Console.WriteLine("Ungültige Eingabe!");
+                        Pause();
                         break;
                 }
 
@@ -200,24 +216,129 @@ namespace projekt_verwaltungssystem_leo_garvanovic.UI
             }
         }
 
-        private static void ShowItems(string listName)
+        private static void Pause()
         {
-            Console.WriteLine($"{listName} anzeigen:");
-            var list = (System.Collections.IList)listen[listName];
+            Console.WriteLine("\nDrücken Sie eine Taste, um fortzufahren...");
+            Console.ReadKey();
+        }
 
-            if (list.Count == 0)
+
+        private static void ShowBrowseMenu(string listName)
+        {
+            bool back = false;
+            while (!back)
             {
-                Console.WriteLine("Keine Einträge vorhanden.");
-            }
-            else
-            {
-                foreach (var item in list)
+                Console.Clear();
+                Console.WriteLine($"---------- {listName}: Anzeigen ----------");
+                Console.WriteLine("1. Alle Einträge anzeigen");
+                Console.WriteLine("2. Suchen (Freitext über alle Eigenschaften)");
+                Console.WriteLine("3. Filtern (Eigenschaft + Operator)");
+                Console.WriteLine("0. Zurück");
+
+                string choice = Console.ReadLine();
+
+                switch (choice)
                 {
-                    Console.WriteLine(item); // Calls ToString() automatically
+                    case "1":
+                        ShowItems(listName);
+                        Pause();
+                        break;
+
+                    case "2":
+                        SearchItems(listName);
+                        Pause();
+                        break;
+
+                    case "3":
+                        FilterItems(listName);
+                        Pause();
+                        break;
+
+                    case "0":
+                        back = true;
+                        break;
+
+                    default:
+                        Console.WriteLine("Ungültige Eingabe!");
+                        Pause();
+                        break;
                 }
             }
         }
 
+        private static void ShowItems(string listName)
+        {
+            var list = GetIList(listName);
+            Console.WriteLine($"{listName} anzeigen:");
+
+            if (list.Count == 0)
+            {
+                Console.WriteLine("Keine Einträge vorhanden.");
+                return;
+            }
+
+            int i = 1;
+            foreach (var item in list)
+                Console.WriteLine($"{i++}. {item}");
+        }
+
+        private static void SearchItems(string listName)
+        {
+            var list = GetIList(listName);
+            Console.Write("Suchbegriff eingeben: ");
+            string term = Console.ReadLine() ?? string.Empty;
+
+            var results = list.Cast<object>()
+                              .Where(o => (o?.ToString() ?? "")
+                                  .IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0)
+                              .ToList();
+
+            PrintResults(results, listName);
+        }
+
+        private static void PrintResults(IEnumerable<object> results, string listName)
+        {
+            Console.WriteLine($"\nTreffer in {listName}:");
+            if (!results.Any())
+            {
+                Console.WriteLine("Keine Treffer.");
+                return;
+            }
+
+            int i = 1;
+            foreach (var item in results)
+                Console.WriteLine($"{i++}. {item}");
+        }
+
+        private static void FilterItems(string listName)
+        {
+            var list = GetIList(listName);
+            var type = GetItemType(listName);
+            var props = type.GetProperties().Where(p => p.CanRead).ToArray();
+
+            if (props.Length == 0)
+            {
+                Console.WriteLine("Keine filterbaren Eigenschaften gefunden.");
+                return;
+            }
+
+            Console.WriteLine("Verfügbare Eigenschaften:");
+            for (int i = 0; i < props.Length; i++)
+                Console.WriteLine($"{i + 1}. {props[i].Name} ({props[i].PropertyType.Name})");
+
+            Console.Write("Eigenschaft auswählen (Nummer): ");
+            if (!int.TryParse(Console.ReadLine(), out int pIndex) || pIndex < 1 || pIndex > props.Length)
+            {
+                Console.WriteLine("Ungültige Auswahl.");
+                return;
+            }
+
+            var prop = props[pIndex - 1];
+            IEnumerable<object> results = Enumerable.Empty<object>();
+
+            if (prop.PropertyType == typeof(string))
+            { }
+        }
 
         private static void AddItem(string listName)
         {
