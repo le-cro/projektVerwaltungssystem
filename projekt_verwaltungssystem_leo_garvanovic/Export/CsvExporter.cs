@@ -65,7 +65,7 @@ namespace projekt_verwaltungssystem_leo_garvanovic.Export
             EnsureList(listName);
 
             if (!File.Exists(filePath))
-                throw new FileNotFoundException("CSV file not found.", filePath);
+                throw new FileNotFoundException("CSV-Datei nicht gefunden.", filePath);
 
             var type = _types[listName];
             var listObj = _listen[listName];
@@ -105,7 +105,7 @@ namespace projekt_verwaltungssystem_leo_garvanovic.Export
                     else
                     {
                         // Optional: log parsing issues
-                        // Console.WriteLine($"Warn: cannot parse '{cols[i]}' for property {prop.Name}");
+                        // FileLogger.Warn($"Konnte '{cols[i]}' nicht für Eigenschaft {prop.Name} parsen");
                     }
                 }
 
@@ -153,7 +153,7 @@ namespace projekt_verwaltungssystem_leo_garvanovic.Export
         private static IEnumerable<object> Enumerate(object listObj)
         {
             var enumerable = listObj as System.Collections.IEnumerable
-                ?? throw new InvalidOperationException("List object is not enumerable.");
+                ?? throw new InvalidOperationException("Listenobjekt ist nicht aufzählbar.");
             foreach (var item in enumerable) yield return item!;
         }
 

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Globalization;
 using System.Collections.Generic;
 using System.Reflection;
+using projekt_verwaltungssystem_leo_garvanovic.Logging;
 
 
 namespace projekt_verwaltungssystem_leo_garvanovic.Services
@@ -33,32 +34,43 @@ namespace projekt_verwaltungssystem_leo_garvanovic.Services
         public void SaveList(string listName, string filePath, char delimiter = ';', bool includeHeader = true)
         {
             EnsureList(listName);
+            FileLogger.Info($"Speichere Liste gestartet: {listName} -> {filePath}");
 
-            var type = _types[listName];
-            var listObj = _listen[listName];
-            var items = Enumerate(listObj);
-
-            var props = GetReadableProps(type);
-
-            Directory.CreateDirectory(Path.GetDirectoryName(filePath)!);
-
-            using var sw = new StreamWriter(filePath, false, new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
-
-            if (includeHeader)
+            try
             {
-                string header = string.Join(delimiter, props.Select(p => EscapeCsv(p.Name, delimiter)));
-                sw.WriteLine(header);
-            }
+                var type = _types[listName];
+                var listObj = _listen[listName];
+                var items = Enumerate(listObj);
 
-            foreach (var item in items)
-            {
-                var cells = props.Select(p =>
+                var props = GetReadableProps(type);
+
+                Directory.CreateDirectory(Path.GetDirectoryName(filePath)!);
+
+                using var sw = new StreamWriter(filePath, false, new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
+
+                if (includeHeader)
                 {
-                    object? raw = p.GetValue(item);
-                    string s = Convert.ToString(raw, CultureInfo.InvariantCulture) ?? string.Empty;
-                    return EscapeCsv(s, delimiter);
-                });
-                sw.WriteLine(string.Join(delimiter, cells));
+                    string header = string.Join(delimiter, props.Select(p => EscapeCsv(p.Name, delimiter)));
+                    sw.WriteLine(header);
+                }
+
+                foreach (var item in items)
+                {
+                    var cells = props.Select(p =>
+                    {
+                        object? raw = p.GetValue(item);
+                        string s = Convert.ToString(raw, CultureInfo.InvariantCulture) ?? string.Empty;
+                        return EscapeCsv(s, delimiter);
+                    });
+                    sw.WriteLine(string.Join(delimiter, cells));
+                }
+
+                FileLogger.Info($"Speichere Liste erfolgreich: {listName} -> {filePath}");
+            }
+            catch (Exception ex)
+            {
+                FileLogger.Error($"Speichern der Liste fehlgeschlagen: {listName} -> {filePath}", ex);
+                throw;
             }
         }
 
@@ -68,83 +80,118 @@ namespace projekt_verwaltungssystem_leo_garvanovic.Services
         public int LoadList(string listName, string filePath, char delimiter = ';', bool clearExisting = false)
         {
             EnsureList(listName);
+            FileLogger.Info($"Lade Liste gestartet: {listName} <- {filePath}");
 
             if (!File.Exists(filePath))
-                throw new FileNotFoundException("CSV file not found.", filePath);
-
-            var type = _types[listName];
-            var listObj = _listen[listName];
-
-            var props = GetReadableProps(type);
-            var propMap = props.ToDictionary(p => p.Name, p => p, StringComparer.OrdinalIgnoreCase);
-
-            // Optionally clear the list
-            if (clearExisting)
-                InvokeNoArg(listObj, "Clear");
-
-            int loaded = 0;
-
-            using var sr = new StreamReader(filePath, DetectEncoding(filePath));
-            string? headerLine = sr.ReadLine();
-            if (headerLine == null)
-                return 0;
-
-            var headerCols = SplitCsvLine(headerLine, delimiter);
-            var colProps = headerCols.Select(h => propMap.TryGetValue(h, out var prop) ? prop : null).ToArray();
-
-            string? line;
-            while ((line = sr.ReadLine()) != null)
             {
-                var cols = SplitCsvLine(line, delimiter);
-                if (cols.Length == 0) continue;
-
-                object instance = Activator.CreateInstance(type)!;
-
-                for (int i = 0; i < Math.Min(cols.Length, colProps.Length); i++)
-                {
-                    var prop = colProps[i];
-                    if (prop == null) continue; // unknown header -> ignore
-
-                    if (TryParseValue(prop.PropertyType, cols[i], out object? value))
-                    {
-                        prop.SetValue(instance, value);
-                    }
-                    else
-                    {
-                        // You can log/collect errors here if needed
-                        // e.g., Console.WriteLine($"Warn: could not parse '{cols[i]}' for {prop.Name}");
-                    }
-                }
-
-                // Append to List<T> via reflection (works regardless of T)
-                InvokeOneArg(listObj, "Add", instance);
-                loaded++;
+                var ex = new FileNotFoundException("CSV-Datei nicht gefunden.", filePath);
+                FileLogger.Error($"Laden der Liste fehlgeschlagen: {listName} <- {filePath}", ex);
+                throw ex;
             }
 
-            return loaded;
+            try
+            {
+                var type = _types[listName];
+                var listObj = _listen[listName];
+
+                var props = GetReadableProps(type);
+                var propMap = props.ToDictionary(p => p.Name, p => p, StringComparer.OrdinalIgnoreCase);
+
+                // Optionally clear the list
+                if (clearExisting)
+                    InvokeNoArg(listObj, "Clear");
+
+                int loaded = 0;
+
+                using var sr = new StreamReader(filePath, DetectEncoding(filePath));
+                string? headerLine = sr.ReadLine();
+                if (headerLine == null)
+                    return 0;
+
+                var headerCols = SplitCsvLine(headerLine, delimiter);
+                var colProps = headerCols.Select(h => propMap.TryGetValue(h, out var prop) ? prop : null).ToArray();
+
+                string? line;
+                while ((line = sr.ReadLine()) != null)
+                {
+                    var cols = SplitCsvLine(line, delimiter);
+                    if (cols.Length == 0) continue;
+
+                    object instance = Activator.CreateInstance(type)!;
+
+                    for (int i = 0; i < Math.Min(cols.Length, colProps.Length); i++)
+                    {
+                        var prop = colProps[i];
+                        if (prop == null) continue; // unknown header -> ignore
+
+                        if (TryParseValue(prop.PropertyType, cols[i], out object? value))
+                        {
+                            prop.SetValue(instance, value);
+                        }
+                        else
+                        {
+                            // You can log/collect errors here if needed
+                            // e.g., FileLogger.Warn($"Konnte '{cols[i]}' nicht für {prop.Name} parsen");
+                        }
+                    }
+
+                    // Append to List<T> via reflection (works regardless of T)
+                    InvokeOneArg(listObj, "Add", instance);
+                    loaded++;
+                }
+
+                FileLogger.Info($"Laden der Liste erfolgreich: {listName} <- {filePath} (Zeilen={loaded})");
+                return loaded;
+            }
+            catch (Exception ex)
+            {
+                FileLogger.Error($"Laden der Liste fehlgeschlagen: {listName} <- {filePath}", ex);
+                throw;
+            }
         }
 
         public void SaveAll(string directoryPath, char delimiter = ';')
         {
-            Directory.CreateDirectory(directoryPath);
-
-            foreach (var kvp in _listen)
+            FileLogger.Info($"Speichere alle Listen gestartet -> {directoryPath}");
+            try
             {
-                string path = Path.Combine(directoryPath, $"{kvp.Key}.csv");
-                SaveList(kvp.Key, path, delimiter);
+                Directory.CreateDirectory(directoryPath);
+
+                foreach (var kvp in _listen)
+                {
+                    string path = Path.Combine(directoryPath, $"{kvp.Key}.csv");
+                    SaveList(kvp.Key, path, delimiter);
+                }
+
+                FileLogger.Info($"Speichere alle Listen erfolgreich -> {directoryPath}");
+            }
+            catch (Exception ex)
+            {
+                FileLogger.Error($"Speichern aller Listen fehlgeschlagen -> {directoryPath}", ex);
+                throw;
             }
         }
 
         public int LoadAll(string directoryPath, char delimiter = ';', bool clearExisting = false)
         {
+            FileLogger.Info($"Lade alle Listen gestartet <- {directoryPath}");
             int sum = 0;
-            foreach (var listName in _listen.Keys)
+            try
             {
-                string path = Path.Combine(directoryPath, $"{listName}.csv");
-                if (File.Exists(path))
-                    sum += LoadList(listName, path, delimiter, clearExisting);
+                foreach (var listName in _listen.Keys)
+                {
+                    string path = Path.Combine(directoryPath, $"{listName}.csv");
+                    if (File.Exists(path))
+                        sum += LoadList(listName, path, delimiter, clearExisting);
+                }
+                FileLogger.Info($"Lade alle Listen erfolgreich <- {directoryPath} (Zeilen={sum})");
+                return sum;
             }
-            return sum;
+            catch (Exception ex)
+            {
+                FileLogger.Error($"Laden aller Listen fehlgeschlagen <- {directoryPath}", ex);
+                throw;
+            }
         }
 
         // ---------- INTERNAL HELPERS ----------
@@ -152,16 +199,16 @@ namespace projekt_verwaltungssystem_leo_garvanovic.Services
         private void EnsureList(string listName)
         {
             if (!_listen.ContainsKey(listName))
-                throw new ArgumentException($"List '{listName}' not found.", nameof(listName));
+                throw new ArgumentException($"Liste '{listName}' nicht gefunden.", nameof(listName));
             if (!_types.ContainsKey(listName))
-                throw new ArgumentException($"Type for list '{listName}' not found.", nameof(listName));
+                throw new ArgumentException($"Typ für Liste '{listName}' nicht gefunden.", nameof(listName));
         }
 
         private static IEnumerable<object> Enumerate(object listObj)
         {
             var enumerable = listObj as System.Collections.IEnumerable;
             if (enumerable == null)
-                throw new InvalidOperationException("List object is not enumerable.");
+                throw new InvalidOperationException("Listenobjekt ist nicht aufzählbar.");
             foreach (var item in enumerable) yield return item!;
         }
 

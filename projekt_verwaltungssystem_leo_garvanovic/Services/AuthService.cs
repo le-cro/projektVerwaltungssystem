@@ -28,5 +28,20 @@ namespace projekt_verwaltungssystem_leo_garvanovic.Services
 
             return benutzerListe.FirstOrDefault(b => b.Benutzername == benutzername && b.Passwort == passwort);
         }
+
+        // Added: return readonly view of configured users for administrative UIs and tests.
+        public IReadOnlyList<Benutzer> GetAllUsers() => benutzerListe.AsReadOnly();
+
+        // New: authenticate by username/password without performing console I/O (used by UI layer)
+        public Benutzer? Authenticate(string benutzername, string passwort)
+        {
+            if (string.IsNullOrWhiteSpace(benutzername) || string.IsNullOrWhiteSpace(passwort))
+                return null;
+
+            // compare username case-insensitively, password must match exactly
+            return benutzerListe.FirstOrDefault(b =>
+                string.Equals(b.Benutzername, benutzername.Trim(), StringComparison.OrdinalIgnoreCase)
+                && b.Passwort == passwort);
+        }
     }
 }

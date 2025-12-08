@@ -10,30 +10,18 @@ namespace projekt_verwaltungssystem_leo_garvanovic
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("------------ Willkommen zur Verwaltungssoftware! ------------");
-            AuthService auth = new AuthService();
-            Benutzer user = null;
+            UIFormatter.ClearAndHeader("Willkommen zur Verwaltungssoftware!");
 
-            while (user == null)
+            // Use the improved login UI
+            Benutzer? user = LoginScreen.Show();
+
+            if (user == null)
             {
-                user = auth.Login();
-
-                if (user != null)
-                {
-                    Console.ForegroundColor = ConsoleColor.Green;
-                    Console.WriteLine($"\nErfolgreich eingeloggt als {user.Benutzername} ({user.Rolle}).");
-                    Console.ForegroundColor = ConsoleColor.White;
-                    
-                    Menu.ShowMainMenu(user);
-                }
-                else
-                {
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine("\nLogin fehlgeschlagen. Bitte überprüfen Sie Ihre Anmeldedaten.\n");
-                    Console.ForegroundColor = ConsoleColor.White;
-                    Console.WriteLine("-------------------------------------------------------------");
-                }
+                // user cancelled
+                return;
             }
+
+            Menu.ShowMainMenu(user);
         }
     }
 }
