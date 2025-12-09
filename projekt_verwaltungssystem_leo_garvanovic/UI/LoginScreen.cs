@@ -4,9 +4,10 @@ using System;
 
 namespace projekt_verwaltungssystem_leo_garvanovic.UI
 {
+    // Login-Screen: sichere Passwort-Eingabe (maskiert) und Rückgabe des authentifizierten Benutzers.
     internal static class LoginScreen
     {
-        // Shows the login screen, returns authenticated Benutzer or null if cancelled.
+        // Zeigt den Login-Screen; gibt den authentifizierten Benutzer zurück oder null bei Abbruch.
         internal static Benutzer? Show()
         {
             var auth = new AuthService();
@@ -43,7 +44,7 @@ namespace projekt_verwaltungssystem_leo_garvanovic.UI
             }
         }
 
-        // Read password with masked input, supports Backspace.
+        // Liest das Passwort maskiert ein (unterstützt Backspace)
         private static string ReadPassword()
         {
             var pwd = new System.Text.StringBuilder();
@@ -61,7 +62,7 @@ namespace projekt_verwaltungssystem_leo_garvanovic.UI
                     if (pwd.Length > 0)
                     {
                         pwd.Length--;
-                        // remove last '*' from console
+                        // entfernt leztes '*' von der Konsole
                         Console.Write("\b \b");
                     }
                 }

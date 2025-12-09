@@ -10,17 +10,20 @@ namespace projekt_verwaltungssystem_leo_garvanovic
     {
         static void Main(string[] args)
         {
+            // Kurze Willkommensanzeige und Header
             UIFormatter.ClearAndHeader("Willkommen zur Verwaltungssoftware!");
 
-            // Use the improved login UI
+            // Verbessertes Login-UI verwenden.
+            // LoginScreen.Show() zeigt das Eingabeformular an und gibt bei Erfolg ein Benutzerobjekt zurück.
             Benutzer? user = LoginScreen.Show();
 
             if (user == null)
             {
-                // user cancelled
+                // Benutzer hat mit 'q' abgebrochen -> Programm beenden
                 return;
             }
 
+            // Hauptmenü anzeigen und an den angemeldeten Benutzer binden
             Menu.ShowMainMenu(user);
         }
     }

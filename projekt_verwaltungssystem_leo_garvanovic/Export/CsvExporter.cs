@@ -10,6 +10,8 @@ using System.Reflection;
 
 namespace projekt_verwaltungssystem_leo_garvanovic.Export
 {
+    // Leichter CSV-Exporter/Importer. Funktionalität ähnlich wie DataService,
+    // aber als separater, fokussierter Helfer genutzt von UI/ExportMenu.
     public sealed class CsvExporter
     {
         private readonly Dictionary<string, object> _listen;
@@ -23,6 +25,7 @@ namespace projekt_verwaltungssystem_leo_garvanovic.Export
 
         // ---------- PUBLIC API ----------
 
+        // Speichert eine bestimmte Liste als CSV. Standard-Trennzeichen ist ';'.
         public void SaveList(string listName, string filePath, char delimiter = ';', bool includeHeader = true)
         {
             EnsureList(listName);
@@ -35,7 +38,7 @@ namespace projekt_verwaltungssystem_leo_garvanovic.Export
             var dir = Path.GetDirectoryName(filePath);
             if (!string.IsNullOrWhiteSpace(dir)) Directory.CreateDirectory(dir);
 
-            // UTF-8 with BOM so Excel opens correctly for de-DE
+            // UTF-8 mit BOM, damit Excel in de-DE richtig öffnet
             using var sw = new StreamWriter(filePath, false, new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
 
             if (includeHeader)
@@ -58,7 +61,7 @@ namespace projekt_verwaltungssystem_leo_garvanovic.Export
         }
 
         /// <summary>
-        /// Loads rows from CSV and appends to the target list. Returns number of rows successfully loaded.
+        /// Lädt Zeilen aus CSV und hängt sie an die Ziel-Liste an. Gibt Anzahl geladener Zeilen zurück.
         /// </summary>
         public int LoadList(string listName, string filePath, char delimiter = ';', bool clearExisting = false)
         {
@@ -73,7 +76,7 @@ namespace projekt_verwaltungssystem_leo_garvanovic.Export
             var props = GetReadableProps(type);
             var propMap = props.ToDictionary(p => p.Name, p => p, StringComparer.OrdinalIgnoreCase);
 
-            // Optionally clear the list
+            // Optional: Liste leeren
             InvokeNoArg(listObj, "Clear", onlyIf: clearExisting);
 
             int loaded = 0;
@@ -96,7 +99,7 @@ namespace projekt_verwaltungssystem_leo_garvanovic.Export
                 for (int i = 0; i < Math.Min(cols.Length, colProps.Length); i++)
                 {
                     var prop = colProps[i];
-                    if (prop == null) continue; // unknown header -> ignore
+                    if (prop == null) continue; // unbekannter Header -> ignorieren
 
                     if (TryParseValue(prop.PropertyType, cols[i], out object? value))
                     {
@@ -104,12 +107,12 @@ namespace projekt_verwaltungssystem_leo_garvanovic.Export
                     }
                     else
                     {
-                        // Optional: log parsing issues
+                        // Optional: Parsing-Probleme loggen
                         // FileLogger.Warn($"Konnte '{cols[i]}' nicht für Eigenschaft {prop.Name} parsen");
                     }
                 }
 
-                // Append to List<T> via reflection (works regardless of T)
+                // An List<T> anhängen via Reflection
                 InvokeOneArg(listObj, "Add", instance);
                 loaded++;
             }
@@ -159,7 +162,7 @@ namespace projekt_verwaltungssystem_leo_garvanovic.Export
 
         private static PropertyInfo[] GetReadableProps(Type t) =>
             t.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-             .Where(p => p.CanRead && p.CanWrite) // writeable is useful for import
+             .Where(p => p.CanRead && p.CanWrite) // writeable ist beim Import nützlich
              .ToArray();
 
         private static void InvokeNoArg(object target, string methodName, bool onlyIf)
@@ -192,7 +195,7 @@ namespace projekt_verwaltungssystem_leo_garvanovic.Export
                 value.EndsWith(" ");
 
             if (value.Contains('"'))
-                value = value.Replace("\"", "\"\""); // double quotes inside quoted fields
+                value = value.Replace("\"", "\"\""); // doppelte Anführungszeichen in quoted fields
 
             return mustQuote ? $"\"{value}\"" : value;
         }

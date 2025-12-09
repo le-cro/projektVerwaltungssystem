@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace projekt_verwaltungssystem_leo_garvanovic.Models
 {
+    // Einfaches Modell für Mitarbeiter / Personen in der Liste
     internal class Person
     {
         public int Id { get; set; }

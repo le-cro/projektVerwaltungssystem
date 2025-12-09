@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 
 namespace projekt_verwaltungssystem_leo_garvanovic.Services
 {
+    // Einfache Authentifizierungs-Logik mit einer statisch konfigurierten Benutzerliste.
+    // In einer realen Anwendung würde hier eine sichere Speicherung / Hashing verwendet werden.
     public class AuthService
     {
         private List<Benutzer> benutzerListe = new List<Benutzer>
@@ -18,6 +20,7 @@ namespace projekt_verwaltungssystem_leo_garvanovic.Services
             new Benutzer("administrator", "admin", "Admin" )
         };
 
+        // Legacy-Methode, die Konsoleneingaben liest (nicht von UI verwendet).
         public Benutzer Login()
         {
             Console.Write("Benutzername: ");
@@ -29,16 +32,16 @@ namespace projekt_verwaltungssystem_leo_garvanovic.Services
             return benutzerListe.FirstOrDefault(b => b.Benutzername == benutzername && b.Passwort == passwort);
         }
 
-        // Added: return readonly view of configured users for administrative UIs and tests.
+        // Liefert eine readonly-Ansicht der konfigurierten Benutzer (für Admin-UI und Tests).
         public IReadOnlyList<Benutzer> GetAllUsers() => benutzerListe.AsReadOnly();
 
-        // New: authenticate by username/password without performing console I/O (used by UI layer)
+        // Authentifiziert ohne Konsolen-I/O (verwendet durch LoginScreen)
         public Benutzer? Authenticate(string benutzername, string passwort)
         {
             if (string.IsNullOrWhiteSpace(benutzername) || string.IsNullOrWhiteSpace(passwort))
                 return null;
 
-            // compare username case-insensitively, password must match exactly
+            // Benutzername case-insensitiv vergleichen, Passwort exakt.
             return benutzerListe.FirstOrDefault(b =>
                 string.Equals(b.Benutzername, benutzername.Trim(), StringComparison.OrdinalIgnoreCase)
                 && b.Passwort == passwort);

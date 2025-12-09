@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace projekt_verwaltungssystem_leo_garvanovic.Models
 {
+    // Repräsentiert einen angemeldeten Benutzer mit Rolle (z.B. Admin, User)
     public class Benutzer
     {
         public string Benutzername { get; set; }

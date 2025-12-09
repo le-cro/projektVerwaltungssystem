@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace projekt_verwaltungssystem_leo_garvanovic.Models
 {
+    // Modell für Auto-Einträge
     internal class Auto
     {
         public int Id { get; set; }

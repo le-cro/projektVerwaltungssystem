@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace projekt_verwaltungssystem_leo_garvanovic.Models
 {
+    // Modell für Handy-Einträge
     internal class Handy
     {
         public int Id { get; set; }

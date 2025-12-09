@@ -9,12 +9,14 @@ using System.IO;
 
 namespace projekt_verwaltungssystem_leo_garvanovic.UI
 {
+    // Menü zum Verwalten der konfigurierten Listen (Anzeigen, Suchen, Filtern, CRUD für Admins)
     public static class ListMenu
     {
         public static void ShowListenMenu(Benutzer user)
         {
             try
             {
+                // Beim ersten Öffnen automatisch aus DataDirectory laden, falls vorhanden
                 if (!MenuContext.DataLoaded && Directory.Exists(MenuContext.DataDirectory))
                 {
                     MenuContext.Data.LoadAll(MenuContext.DataDirectory, MenuContext.CsvDelimiter, clearExisting: true);
@@ -71,6 +73,7 @@ namespace projekt_verwaltungssystem_leo_garvanovic.UI
             }
         }
 
+        // Verwaltung einer einzelnen Liste: Anzeige, Hinzufügen, Bearbeiten, Löschen (abhängig von Rolle)
         private static void ManageList(string listName, Benutzer user)
         {
             bool back = false;
@@ -122,6 +125,7 @@ namespace projekt_verwaltungssystem_leo_garvanovic.UI
             }
         }
 
+        // Untermenü für Durchsuchen / Suchen / Filtern
         private static void ShowBrowseMenu(string listName)
         {
             bool back = false;
@@ -182,6 +186,7 @@ namespace projekt_verwaltungssystem_leo_garvanovic.UI
                 Console.WriteLine($"  {i++}. {item}");
         }
 
+        // Einfache Volltextsuche über ToString() der Elemente
         private static void SearchItems(string listName)
         {
             var list = MenuContext.GetIList(listName);
@@ -210,6 +215,7 @@ namespace projekt_verwaltungssystem_leo_garvanovic.UI
                 Console.WriteLine($"{i++}. {item}");
         }
 
+        // Filterfunktion: Benutzer wählt Eigenschaft und Operator, Filter wird angewendet
         private static void FilterItems(string listName)
         {
             var list = MenuContext.GetIList(listName);
@@ -290,7 +296,7 @@ namespace projekt_verwaltungssystem_leo_garvanovic.UI
             }
             else
             {
-                Console.Write("Wert (Gleichheit überprüft via ToString): ");
+                Console.Write("Wert (Gleichheit über ToString): ");
                 var val = Console.ReadLine() ?? string.Empty;
                 predicate = o => string.Equals(Convert.ToString(prop.GetValue(o)), val, StringComparison.OrdinalIgnoreCase);
             }
@@ -299,6 +305,7 @@ namespace projekt_verwaltungssystem_leo_garvanovic.UI
             PrintResults(results, listName);
         }
 
+        // CRUD-Operationen (Admin-only) - fügt neue Elemente in die jeweiligen Listen ein
         private static void AddItem(string listName)
         {
             switch (listName)

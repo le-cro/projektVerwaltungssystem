@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace projekt_verwaltungssystem_leo_garvanovic.Models
 {
+    // Modell für einen Computer-Eintrag (z.B. Ausleih-Informationen)
     internal class Computer
     {
         public int Id { get; set; }

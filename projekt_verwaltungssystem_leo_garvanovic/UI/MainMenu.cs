@@ -7,6 +7,7 @@ using System.Linq;
 
 namespace projekt_verwaltungssystem_leo_garvanovic.UI
 {
+    // Hauptmenü: zeigt administrative Optionen für Admins und eingeschränkte Optionen für normale User.
     public static class MainMenu
     {
         public static void Show(Benutzer user)
@@ -17,6 +18,7 @@ namespace projekt_verwaltungssystem_leo_garvanovic.UI
             {
                 UIFormatter.ClearAndHeader("Hauptmenü");
 
+                // Admins sehen zusätzliche Menüpunkte (Benutzerverwaltung, System-Logs)
                 if (user.Rolle == "Admin")
                 {
                     UIFormatter.PrintOptions(
@@ -93,6 +95,7 @@ namespace projekt_verwaltungssystem_leo_garvanovic.UI
             }
         }
 
+        // Zeigt die aktuelle, statisch konfigurierte Benutzerliste an (read-only)
         private static void BenutzerVerwaltung()
         {
             var auth = new AuthService();
@@ -118,6 +121,7 @@ namespace projekt_verwaltungssystem_leo_garvanovic.UI
             ConsoleUtils.Pause();
         }
 
+        // Admin-Funktion: Logdateien anzeigen, Ordner öffnen oder neuen Logeintrag erzeugen.
         private static void SystemLogs()
         {
             const string logDir = @"C:\Temp\Logs";

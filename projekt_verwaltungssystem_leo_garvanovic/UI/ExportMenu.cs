@@ -4,6 +4,7 @@ using projekt_verwaltungssystem_leo_garvanovic.Logging;
 
 namespace projekt_verwaltungssystem_leo_garvanovic.UI
 {
+    // Menü für CSV-Export/Import. Nutzt MenuContext.Csv um Listen zu speichern/laden.
     public static class ExportMenu
     {
         public static void ExportFunktionen()
@@ -114,6 +115,7 @@ namespace projekt_verwaltungssystem_leo_garvanovic.UI
                         break;
 
                     case "5":
+                        // Wechselt das Trennzeichen zwischen ';' und ',',
                         MenuContext.CsvDelimiter = (MenuContext.CsvDelimiter == ';') ? ',' : ';';
                         FileLogger.Info($"CSV-Trennzeichen geändert auf '{MenuContext.CsvDelimiter}'");
                         UIFormatter.ShowStatus($"Trennzeichen geändert auf '{MenuContext.CsvDelimiter}'");
@@ -131,6 +133,7 @@ namespace projekt_verwaltungssystem_leo_garvanovic.UI
             }
         }
 
+        // Helfer: Liste auswählen (zeigt die konfigurierten Listennamen)
         private static string? PromptListName()
         {
             var names = MenuContext.Lists.Keys.ToList();
@@ -143,6 +146,7 @@ namespace projekt_verwaltungssystem_leo_garvanovic.UI
             return names[idx - 1];
         }
 
+        // Kleine helper-Funktion für j/n-Eingaben
         private static bool PromptYesNo(string prompt)
         {
             Console.Write(prompt);

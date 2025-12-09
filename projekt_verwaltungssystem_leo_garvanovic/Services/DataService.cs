@@ -10,6 +10,8 @@ using projekt_verwaltungssystem_leo_garvanovic.Logging;
 
 namespace projekt_verwaltungssystem_leo_garvanovic.Services
 {
+    // Service, der das Speichern / Laden von Liste<T> in CSV-Dateien kapselt.
+    // Arbeitet generisch über Reflection, damit es mit beliebigen Modeltypen funktioniert.
     public sealed class DataService
     {
         
@@ -22,15 +24,18 @@ namespace projekt_verwaltungssystem_leo_garvanovic.Services
             _types = listTypes ?? throw new ArgumentNullException(nameof(listTypes));
         }
 
+        // Öffentlich lesbare Views für Debug/Anzeigezwecke
         public IReadOnlyDictionary<string, object> Lists => _listen;
         public IReadOnlyDictionary<string, Type> Types => _types;
 
+        // Hilfsmethoden zum schnellen Zugriff
         public List<T> GetList<T>(string name) => (List<T>)_listen[name];
         public Type GetItemType(string name) => _types[name];
 
 
         // ---------- PUBLIC API ----------
 
+        // Speichert eine einzelne Liste in eine CSV-Datei. Schreibt Header (Eigenschaftsnamen) optional.
         public void SaveList(string listName, string filePath, char delimiter = ';', bool includeHeader = true)
         {
             EnsureList(listName);
@@ -75,7 +80,8 @@ namespace projekt_verwaltungssystem_leo_garvanovic.Services
         }
 
         /// <summary>
-        /// Loads rows from CSV and appends to the target list. Returns number of rows successfully loaded.
+        /// Lädt Zeilen aus einer CSV und fügt sie an die Ziel-Liste an.
+        /// Gibt die Anzahl erfolgreich geladener Zeilen zurück.
         /// </summary>
         public int LoadList(string listName, string filePath, char delimiter = ';', bool clearExisting = false)
         {
@@ -97,7 +103,7 @@ namespace projekt_verwaltungssystem_leo_garvanovic.Services
                 var props = GetReadableProps(type);
                 var propMap = props.ToDictionary(p => p.Name, p => p, StringComparer.OrdinalIgnoreCase);
 
-                // Optionally clear the list
+                // Optional: vorhandene Einträge löschen
                 if (clearExisting)
                     InvokeNoArg(listObj, "Clear");
 
@@ -122,7 +128,7 @@ namespace projekt_verwaltungssystem_leo_garvanovic.Services
                     for (int i = 0; i < Math.Min(cols.Length, colProps.Length); i++)
                     {
                         var prop = colProps[i];
-                        if (prop == null) continue; // unknown header -> ignore
+                        if (prop == null) continue; // unbekannter Header -> ignorieren
 
                         if (TryParseValue(prop.PropertyType, cols[i], out object? value))
                         {
@@ -130,12 +136,11 @@ namespace projekt_verwaltungssystem_leo_garvanovic.Services
                         }
                         else
                         {
-                            // You can log/collect errors here if needed
-                            // e.g., FileLogger.Warn($"Konnte '{cols[i]}' nicht für {prop.Name} parsen");
+                            // Hier könnten Parsing-Fehler gesammelt oder geloggt werden
                         }
                     }
 
-                    // Append to List<T> via reflection (works regardless of T)
+                    // Per Reflection die generische List<T>.Add aufrufen
                     InvokeOneArg(listObj, "Add", instance);
                     loaded++;
                 }
@@ -150,6 +155,7 @@ namespace projekt_verwaltungssystem_leo_garvanovic.Services
             }
         }
 
+        // Speichert alle konfigurierten Listen in CSV-Dateien im angegebenen Verzeichnis.
         public void SaveAll(string directoryPath, char delimiter = ';')
         {
             FileLogger.Info($"Speichere alle Listen gestartet -> {directoryPath}");
@@ -172,6 +178,7 @@ namespace projekt_verwaltungssystem_leo_garvanovic.Services
             }
         }
 
+        // Lädt alle CSV-Dateien aus einem Verzeichnis und fügt die Daten in die jeweiligen Listen ein.
         public int LoadAll(string directoryPath, char delimiter = ';', bool clearExisting = false)
         {
             FileLogger.Info($"Lade alle Listen gestartet <- {directoryPath}");
@@ -196,6 +203,7 @@ namespace projekt_verwaltungssystem_leo_garvanovic.Services
 
         // ---------- INTERNAL HELPERS ----------
 
+        // Validiert, dass die Liste und ihr Typ konfiguriert sind.
         private void EnsureList(string listName)
         {
             if (!_listen.ContainsKey(listName))
@@ -212,15 +220,15 @@ namespace projekt_verwaltungssystem_leo_garvanovic.Services
             foreach (var item in enumerable) yield return item!;
         }
 
+        // Liefert öffentlich lesbare, schreibbare Eigenschaften eines Typs (wichtig für Export/Import)
         private static PropertyInfo[] GetReadableProps(Type t) =>
             t.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-             .Where(p => p.CanRead && p.CanWrite) // writeable is useful for import
+             .Where(p => p.CanRead && p.CanWrite) // writeable ist beim Import nützlich
              .ToArray();
 
         private static Encoding DetectEncoding(string filePath)
         {
-            // Use UTF8 by default; if you always write with BOM, UTF8 will be correct.
-            // You can extend to detect BOMs if needed.
+            // Zurzeit wird UTF8 mit BOM verwendet; Erweiterung möglich, um BOM automatisch zu erkennen.
             return new UTF8Encoding(encoderShouldEmitUTF8Identifier: true);
         }
 
@@ -236,8 +244,7 @@ namespace projekt_verwaltungssystem_leo_garvanovic.Services
             m?.Invoke(target, new[] { arg });
         }
 
-        // --- CSV parsing & formatting ---
-
+        // --- CSV parsing & formatting helper methods ---
         private static string EscapeCsv(string? value, char delimiter)
         {
             if (value == null) value = string.Empty;
@@ -251,7 +258,7 @@ namespace projekt_verwaltungssystem_leo_garvanovic.Services
                 value.EndsWith(" ");
 
             if (value.Contains('"'))
-                value = value.Replace("\"", "\"\""); // double quotes inside quoted fields
+                value = value.Replace("\"", "\"\""); // doppelte Anführungszeichen in quoted fields
 
             return mustQuote ? $"\"{value}\"" : value;
         }
@@ -311,7 +318,6 @@ namespace projekt_verwaltungssystem_leo_garvanovic.Services
         }
 
         // --- Type parsing ---
-
         private static bool TryParseValue(Type t, string text, out object? value)
         {
             text = text?.Trim() ?? string.Empty;
@@ -336,7 +342,7 @@ namespace projekt_verwaltungssystem_leo_garvanovic.Services
             // if (t == typeof(decimal)) ...
             // if (t == typeof(bool)) ...
 
-            // Fallback: try ChangeType (works for many primitives)
+            // Fallback: try ChangeType (works für viele Primitive)
             try
             {
                 value = Convert.ChangeType(text, t, CultureInfo.InvariantCulture);

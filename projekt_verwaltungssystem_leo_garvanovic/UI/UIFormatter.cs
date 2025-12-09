@@ -2,9 +2,10 @@
 
 namespace projekt_verwaltungssystem_leo_garvanovic.UI
 {
+    // Kleine Hilfsklasse für konsistente Konsolen-Ausgabe (Header, Optionen, Farben)
     internal static class UIFormatter
     {
-        // Clear screen and draw a boxed header with centered title (uses Unicode box characters).
+        // Bildschirm löschen und eine boxartige Überschrift mit zentriertem Titel zeichnen.
         internal static void ClearAndHeader(string title)
         {
             Console.Clear();
@@ -32,11 +33,11 @@ namespace projekt_verwaltungssystem_leo_garvanovic.UI
             Console.WriteLine("└" + new string('─', width - 2) + "┘");
             Console.ResetColor();
 
-            // Extra spacing to avoid option and input being shown on same line
+            // Zusätzlicher Abstand, damit Eingabeaufforderung nicht gleich an der selben Zeile hängt
             Console.WriteLine();
         }
 
-        // Print options in a consistent color and with a small indent
+        // Optionen in einer einheitlichen Farbe ausgeben
         internal static void PrintOptions(params string[] options)
         {
             Console.ForegroundColor = ConsoleColor.Yellow;
@@ -45,10 +46,10 @@ namespace projekt_verwaltungssystem_leo_garvanovic.UI
                 Console.WriteLine("  " + o);
             }
             Console.ResetColor();
-            Console.WriteLine(); // separate options from prompt
+            Console.WriteLine(); // Trennung zur Eingabe
         }
 
-        // Read an option; leaves an empty line after reading to separate prompt and subsequent content
+        // Liest eine Option und sorgt für Trennung in der Anzeige
         internal static string ReadOption(string prompt = "Auswahl: ")
         {
             Console.ForegroundColor = ConsoleColor.Green;
@@ -57,7 +58,7 @@ namespace projekt_verwaltungssystem_leo_garvanovic.UI
 
             var s = Console.ReadLine() ?? string.Empty;
 
-            // ensure visual separation after choice
+            // visuelle Trennung nach der Eingabe
             Console.WriteLine();
             return s.Trim();
         }
@@ -69,6 +70,7 @@ namespace projekt_verwaltungssystem_leo_garvanovic.UI
             Console.ResetColor();
         }
 
+        // Standard-Hinweis für "Press any key"
         internal static void PressAnyKey(string hint = "Drücken Sie eine Taste, um fortzufahren...")
         {
             Console.WriteLine();
