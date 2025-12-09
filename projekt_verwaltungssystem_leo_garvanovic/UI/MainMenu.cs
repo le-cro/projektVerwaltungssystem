@@ -24,7 +24,7 @@ namespace projekt_verwaltungssystem_leo_garvanovic.UI
                     UIFormatter.PrintOptions(
                         "1. Benutzerverwaltung",
                         "2. Listenverwaltung",
-                        "3. Export",
+                        "3. Export/Import",
                         "4. System-Logs",
                         "0. Logout"
                     );
